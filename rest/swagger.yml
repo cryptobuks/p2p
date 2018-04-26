@@ -82,8 +82,7 @@ paths:
         name: "hash"
         description: "Instance configuration"
         required: true 
-        schema:
-          $ref: "#/definitions/Instance"
+        type: "string"
       responses:
         200:
           description: "Sucessfully created"
@@ -197,7 +196,6 @@ definitions:
     properties:
       hash:
         type: "string"
-        required: true
       interface:
         $ref: "#/definitions/Interface"
       port:
@@ -247,7 +245,6 @@ definitions:
       level:
         type: "string"
         default: "info"
-        required: true
   Daemon:
     type: object
     properties:
