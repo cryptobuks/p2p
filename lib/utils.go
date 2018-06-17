@@ -3,6 +3,7 @@ package ptp
 import (
 	"crypto/rand"
 	"fmt"
+	"io/ioutil"
 	"net"
 
 	uuid "github.com/wayn3h0/go-uuid"
@@ -156,4 +157,13 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func readYAML(filepath string, out interface) ([]byte, error) {
+	contents, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read YAML file: %v", err)
+	}
+
+	return contents, nil
 }
