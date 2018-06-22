@@ -126,11 +126,12 @@ type Network struct {
 }
 
 // Stop will terminate packet reader
-func (uc *Network) Stop() {
+func (uc *Network) Stop() error {
 	uc.disposed = true
 	if uc.conn != nil {
-		uc.conn.Close()
+		return uc.conn.Close()
 	}
+	return fmt.Errorf("Nil Connection")
 }
 
 // Disposed returns whether service is willing to stop or not
@@ -168,14 +169,32 @@ func (uc *Network) Init(host string, port int) error {
 
 // KeepAlive will send keep alive packet periodically to keep
 // UDP port bind
-func (uc *Network) KeepAlive(addr *net.UDPAddr) {
-	if addr == nil {
-		Log(Error, "Can't start keep alive session: address is nil")
-		return
+func (uc *Network) KeepAlive(target string) error {
+	if uc.conn == nil {
+		return fmt.Errorf("Nil Connection")
 	}
+
+	addresses, err := SrvLookup(target, "udp", "subutai.io")
+	if err != nil {
+		return fmt.Errorf("Failed to lookup address for keep alive session: %s", err.Error())
+	}
+	if len(addresses) == 0 {
+		return fmt.Errorf("No suitable address for keep alive")
+	}
+
+	firstAddr, e := addresses[0]
+	if !e {
+		return fmt.Errorf("Failed to retrieve keep alive address at index 0")
+	}
+
+	addr, err := net.ResolveUDPAddr("udp4", firstAddr)
+	if err != nil {
+		return fmt.Errorf("Failed to resolve UDP addr for keep alive session: %s", err.Error())
+	}
+
 	data := []byte{0x0D, 0x0A}
 	keepAlive := time.Now()
-	Log(Info, "Started keep alive session with %s", addr)
+	Log(Debug, "Started keep alive session with %s", addr)
 	i := 0
 	for i < 20 {
 		uc.SendRawBytes(data, addr)
@@ -189,10 +208,14 @@ func (uc *Network) KeepAlive(addr *net.UDPAddr) {
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
+	return nil
 }
 
 // GetPort return a port assigned
 func (uc *Network) GetPort() int {
+	if uc.conn == nil {
+		return -1
+	}
 	addr, _ := net.ResolveUDPAddr("udp4", uc.conn.LocalAddr().String())
 	return addr.Port
 }
@@ -201,17 +224,27 @@ func (uc *Network) GetPort() int {
 type UDPReceivedCallback func(count int, src_addr *net.UDPAddr, err error, buff []byte)
 
 // Listen is a main listener of a network traffic
-func (uc *Network) Listen(receivedCallback UDPReceivedCallback) {
+func (uc *Network) Listen(receivedCallback UDPReceivedCallback) error {
 	Log(Info, "Started UDP listener")
+	if uc.conn == nil {
+		return fmt.Errorf("Nil connection")
+	}
 	for !uc.Disposed() {
 		n, src, err := uc.conn.ReadFromUDP(uc.inBuffer[:])
 		receivedCallback(n, src, err, uc.inBuffer[:])
 	}
 	Log(Info, "Stopping UDP Listener")
+	return nil
 }
 
 // SendMessage sends message over network
 func (uc *Network) SendMessage(msg *P2PMessage, dstAddr *net.UDPAddr) (int, error) {
+	if uc.conn == nil {
+		return -1, fmt.Errorf("Nil connection")
+	}
+	if msg == nil {
+		return 0, fmt.Errorf("Nil message")
+	}
 	n, err := uc.conn.WriteToUDP(msg.Serialize(), dstAddr)
 	if err != nil {
 		return 0, err
