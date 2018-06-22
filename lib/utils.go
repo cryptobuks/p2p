@@ -7,6 +7,7 @@ import (
 	"net"
 
 	uuid "github.com/wayn3h0/go-uuid"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // Different utility functions
@@ -160,13 +161,20 @@ func min(a, b int) int {
 	return b
 }
 
-func readYAML(filepath string, out interface) ([]byte, error) {
-	contents, err := ioutil.ReadFile(filepath)
+func readYAML(filepath string, out interface{}) error {
+	buffer, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read YAML file: %v", err)
+		return fmt.Errorf("Failed to read YAML file: %v", err)
 	}
 
-	return contents, nil
+	err = yaml.Unmarshal(buffer, out)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // SrvLookup will search for specified service under provided domain
 // and return a map of net.Addr sorted by priority
 func SrvLookup(name, proto, domain string) (map[int]string, error) {
