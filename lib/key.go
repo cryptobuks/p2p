@@ -34,11 +34,12 @@ func NewKey(key string, start, expiration time.Time, idList []string) (*Key, err
 // id is a portion of MD5 hash of a key which must be unique
 // inside a particular p2p environment
 type Key struct {
-	id      string
-	key     string
-	added   time.Time
-	starts  time.Time
-	expires time.Time
+	id        string    // Unique ID of the key
+	key       string    // Crypto key
+	added     time.Time // When key was added
+	starts    time.Time // When key starts
+	expires   time.Time // When key ends
+	prolonged bool      // Whether key was prolonged due to missing other acceptable key
 }
 
 // Method will do 256 attempts to generate unique ID
