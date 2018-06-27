@@ -1,6 +1,7 @@
 package ptp
 
 import (
+	"io/ioutil"
 	"net"
 	"reflect"
 	"sync"
@@ -230,6 +231,49 @@ func TestPeerToPeer_FindNetworkAddresses(t *testing.T) {
 			}
 			if err := p.FindNetworkAddresses(); (err != nil) != tt.wantErr {
 				t.Errorf("PeerToPeer.FindNetworkAddresses() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_readYAML(t *testing.T) {
+
+	b := []byte("field1: data1\nfield2: 2\nfield3: data3\nfield4: 4\n")
+	err := ioutil.WriteFile("/tmp/testfile.yaml", b, 0644)
+	if err != nil {
+		t.Fatalf("Failed to write /tmp/testfile.yaml: %s", err.Error())
+	}
+
+	type ts struct {
+		field1 string `yaml:"field1"`
+		field2 int    `yaml:"field2"`
+		field3 string `yaml:"field3"`
+		field4 int    `yaml:"field4"`
+	}
+
+	tsr := &ts{
+		field1: "data1",
+		field2: 2,
+		field3: "data3",
+		field4: 4,
+	}
+
+	type args struct {
+		filepath string
+		out      interface{}
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"Missing file", args{filepath: "/tmp/not-existing-file"}, true},
+		{"Positive result", args{filepath: "/tmp/testfile.yaml", out: tsr}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := readYAML(tt.args.filepath, tt.args.out); (err != nil) != tt.wantErr {
+				t.Errorf("readYAML() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

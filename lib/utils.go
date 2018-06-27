@@ -3,9 +3,11 @@ package ptp
 import (
 	"crypto/rand"
 	"fmt"
+	"io/ioutil"
 	"net"
 
 	uuid "github.com/wayn3h0/go-uuid"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // Different utility functions
@@ -157,6 +159,20 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func readYAML(filepath string, out interface{}) error {
+	buffer, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		return fmt.Errorf("Failed to read YAML file: %v", err)
+	}
+
+	err = yaml.Unmarshal(buffer, out)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // SrvLookup will search for specified service under provided domain
